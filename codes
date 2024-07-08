@@ -1,0 +1,370 @@
+%matplotlib inline
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+
+Reading dataset from file and storing it in datatset 
+dataset=pd.read_csv("C:\\Users/amoks/Desktop/AI year 2/diagnose3.csv")
+Printing first five rows of dataset 
+dataset.head()
+Printing last five rows of dataset 
+dataset.tail()
+dataset.shape
+dataset.columns
+#Specifying the features x and target y 
+X = dataset.iloc[:, 3:14].values
+y = dataset.iloc[:, 14].values
+d = dataset.iloc[:, 1:3].values ## new variable for categorical values
+print(dataset,"\n")
+#Printing the features
+print(X, "\n")
+#Printing the target
+print(y)
+#Printing categorical values
+print(d)
+#calculates a summary of statistics of the Dataframe columns
+display(dataset.describe())
+
+from sklearn.datasets import load_digits
+digits = load_digits()
+dir(digits)
+
+plt.gray()
+
+for i in range(5):
+    plt.matshow(digits.images[i])
+
+from sklearn.impute import SimpleImputer
+#Importing Simple imputer from Sklearn
+# Mean is used along each column to fill in the values for every numeric data feature.
+imputer = SimpleImputer(missing_values=np.nan, strategy='mean')
+#Specifying the columns for imputer
+X[:,0:13] = imputer.fit_transform(X[:,0:13])
+#Printing X to check if every feature have a value
+print(X)
+
+imputer = SimpleImputer(missing_values=np.nan, strategy='most_frequent')
+#Importing Simple imputer from Sklearn
+# Mean is used along each column to fill in the values for every textual data feature.
+d = imputer.fit_transform(d)# select first and second column of X
+# Now, print first and second to column of X to see if succesful.
+print(d)
+
+from sklearn.preprocessing import OneHotEncoder
+encoder = OneHotEncoder()
+# d2 is used to pick up the first column of d
+#(the '-1' just means that reshape should use the
+# number of elements in the column as appropriate
+d2 = d[:,0].reshape(-1,1)
+# OneHotEncoder object fit to d2 and transform the data
+d3 = encoder.fit_transform(d2).toarray()
+
+# combine the new features with comluns of d
+# axis=1 just means to concantenate them by column
+
+d = np.concatenate((d3,d[:,1:2]),axis=1)
+
+# When converting to dummy variables we can remove one of them,
+# so remove the first one.
+
+d=d[:, 0:]
+print(d)
+from sklearn.preprocessing import OneHotEncoder
+encoder = OneHotEncoder()
+# d2 is used to pick up the first column of d
+#(the '-1' just means that reshape should use the
+# number of elements in the column as appropriate
+d2 = d[:,2].reshape(-1,1)
+# OneHotEncoder object fit to d2 and transform the data
+d3 = encoder.fit_transform(d2).toarray()
+# combine the new features with comluns of d
+# axis=1 just means to concantenate them by column
+d = np.concatenate((d3,d[:,0:2]),axis=1)
+d=d[:, 0:]
+print(d)
+from sklearn.preprocessing import StandardScaler
+#Creating a StandardScaler object
+sc = StandardScaler()
+#Scaling all of the features of X
+X[:,0:13] = sc.fit_transform(X[:,0:13])
+#Printing the results after scaling
+print(X[1:, :])
+
+print('Mean of x1: {:5.3f}\n'.format(np.mean(X[:,0])))
+print('Mean of x2: {:5.3f}\n'.format(np.mean(X[:,1])))
+print('Mean of x3: {:5.3f}\n'.format(np.mean(X[:,2])))
+print('Mean of x4: {:5.3f}\n'.format(np.mean(X[:,3])))
+print('Mean of x5: {:5.3f}\n'.format(np.mean(X[:,4])))
+print('Mean of x6: {:5.3f}\n'.format(np.mean(X[:,5])))
+print('Mean of x7: {:5.3f}\n'.format(np.mean(X[:,6])))
+print('Mean of x8: {:5.3f}\n'.format(np.mean(X[:,7])))
+print('Mean of x9: {:5.3f}\n'.format(np.mean(X[:,8])))
+print('Mean of x10: {:5.3f}\n'.format(np.mean(X[:,9])))
+print('Mean of x11: {:5.3f}\n'.format(np.mean(X[:,10])))
+print (X)
+
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import mutual_info_regression
+
+#Identifying the relevant features
+#Trough many trial we have determined that the best K is 11
+select = SelectKBest(mutual_info_regression, k=10).fit(X, y)
+#Transfomring the features
+X = select.transform(X)
+#Printing the features
+print(X)
+
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import mutual_info_regression
+#Identifying the relevant features
+#Through many trial it is determined that the best K is 10
+select = SelectKBest(mutual_info_regression, k=10).fit(X, y)
+X = select.transform(X)
+print(X)
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.1,random_state= 0)
+#printing out the test data
+print(X_test)
+print(y_test)
+from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import KFold, cross_validate
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_classif
+
+# to create a Naive Bayes Classifier
+nb = GaussianNB()
+# applying k-Fold Cross Validation
+cv = KFold(n_splits=10, shuffle=True, random_state = 0)
+for kfs in range(1,11):
+    # identifing the relevant features based on the training data
+    select = SelectKBest(score_func=f_classif, k=kfs).fit(X_train, y_train)
+    # transform the training and test inputs
+    X_trainFS = select.transform(X_train)
+    X_testFS = select.transform(X_test)
+    scores = cross_validate(estimator = nb, X = X_trainFS, y = y_train, cv = cv)
+    print(scores["test_score"].mean())
+##Logistic Regression#
+from sklearn.linear_model import LogisticRegression
+lr = LogisticRegression()
+lr.fit(X_trainFS, y_train)
+y_pred = lr.predict(X_testFS)
+##confusion matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+import seaborn as sn
+plt.figure(figsize=(10,7))
+sn.heatmap(cm, annot=True)
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+from sklearn.metrics import accuracy_score, precision_score, recall_score,f1_score
+print('\nAccuracy: {:.2f}\n'.format(accuracy_score(y_test, y_pred)))
+print('Micro Precision: {:.2f}'.format(precision_score(y_test, y_pred,average='micro')))
+print('Micro Recall: {:.2f}'.format(recall_score(y_test, y_pred,average='micro')))
+print('Micro F1-score: {:.2f}\n'.format(f1_score(y_test, y_pred,average='micro')))
+print('Macro Precision: {:.2f}'.format(precision_score(y_test, y_pred,average='macro')))
+print('Macro Recall: {:.2f}'.format(recall_score(y_test, y_pred,average='macro')))
+print('Macro F1-score: {:.2f}\n'.format(f1_score(y_test, y_pred,average='macro')))
+print('Weighted Precision: {:.2f}'.format(precision_score(y_test, y_pred,average='weighted')))
+print('Weighted Recall: {:.2f}'.format(recall_score(y_test, y_pred,average='weighted')))
+print('Weighted F1-score: {:.2f}'.format(f1_score(y_test, y_pred,average='weighted')))
+from sklearn.datasets import make_blobs
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LogisticRegression
+X, y = make_blobs(n_samples=1000, centers=2, n_features=13, cluster_std=20)
+model = LogisticRegression()
+solvers = ['newton-cg', 'lbfgs', 'liblinear']
+penalty = ['l2']
+c_values = [100, 10, 1.0, 0.1, 0.01]
+grid = dict(solver=solvers,penalty=penalty,C=c_values)
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv,scoring='accuracy',error_score=0)
+grid_result = grid_search.fit(X, y)
+print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+means = grid_result.cv_results_['mean_test_score']
+stds = grid_result.cv_results_['std_test_score']
+params = grid_result.cv_results_['params']
+for mean, stdev, param in zip(means, stds, params):
+    print("%f (%f) with: %r" % (mean, stdev, param))
+from sklearn.linear_model import LogisticRegression
+from numpy import mean
+from numpy import std
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.feature_selection import RFE
+from sklearn.pipeline import Pipeline
+# define dataset
+X, y= make_classification(n_samples=1000, n_features=13, n_informative=5,n_redundant=5, random_state=0)
+rfe = RFE(estimator=LogisticRegression(), n_features_to_select=13)
+model = LogisticRegression(C= 100, penalty= 'l2', solver= 'newton-cg')
+pipeline= Pipeline(steps=[('s',rfe),('m',model)])
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='accuracy', cv=cv,n_jobs=-1, error_score='raise')
+# report performance
+print('Accuracy score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+X, y= make_classification(n_samples=1000, n_features=13, n_informative=5,n_redundant=5, random_state=0)
+# create pipeline
+rfe = RFE(estimator=LogisticRegression(), n_features_to_select=13)
+model = LogisticRegression(C= 100, penalty= 'l2', solver= 'newton-cg')
+pipeline= Pipeline(steps=[('s',rfe),('m',model)])
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='precision', cv=cv,n_jobs=-1, error_score='raise')
+# report performance
+print('Precision score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+X, y= make_classification(n_samples=1000, n_features=13, n_informative=5,n_redundant=5, random_state=0)
+# create pipeline
+rfe = RFE(estimator=LogisticRegression(), n_features_to_select=13)
+model = LogisticRegression(C= 100, penalty= 'l2', solver= 'newton-cg')
+pipeline= Pipeline(steps=[('s',rfe),('m',model)])
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='recall', cv=cv, n_jobs=-1,error_score='raise')
+# report performance
+print('Recall score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+X, y= make_classification(n_samples=1000, n_features=13, n_informative=5,n_redundant=5, random_state=0)
+# create pipeline
+rfe = RFE(estimator=LogisticRegression(), n_features_to_select=13)
+model = LogisticRegression(C= 100, penalty= 'l2', solver= 'newton-cg')
+pipeline= Pipeline(steps=[('s',rfe),('m',model)])
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='f1', cv=cv, n_jobs=-1,error_score='raise')
+# report performance
+print('F1-score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
+from scipy.stats import randint
+from sklearn.svm import SVC
+from sklearn.model_selection import RandomizedSearchCV
+
+# Setup the parameters and distributions
+param_dist = {
+    "C": [0.1, 1, 10, 100],
+    "kernel": ["linear", "poly", "rbf", "sigmoid"],
+    "degree": [2, 3, 4, 5],
+    "gamma": ["scale", "auto"],
+    "coef0": [-1, 0, 1],
+}
+
+# Instantiate a Support Vector Machine classifier: svm
+svm = SVC()
+
+# Instantiate the RandomizedSearchCV object: svm_cv
+svm_cv = RandomizedSearchCV(svm, param_dist, cv=5)
+
+# Fit it to the data
+svm_cv.fit(X, y)
+
+# Print the tuned parameters and score
+print("Tuned SVM Parameters: {}".format(svm_cv.best_params_))
+print("Best score is {}".format(svm_cv.best_score_))
+
+# evaluate RFE for classification
+from numpy import mean
+from numpy import std
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.feature_selection import RFE
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+
+# define dataset
+X, y = make_classification(n_samples=1000, n_features=13, n_informative=5,
+                           n_redundant=5, random_state=0)
+
+# create pipeline
+rfe = RFE(estimator=SVC(kernel='linear'), n_features_to_select=13)
+model = SVC(kernel='linear', C=1.0)
+pipeline = Pipeline(steps=[('s',rfe),('m',model)])
+
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='accuracy', cv=cv,
+                           n_jobs=-1, error_score='raise')
+
+# report performance
+print('Accuracy score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
+# evaluate RFE for classification using SVM
+from numpy import mean
+from numpy import std
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.feature_selection import RFE
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+
+# define dataset
+X, y = make_classification(n_samples=1000, n_features=13, n_informative=5,
+                           n_redundant=5, random_state=0)
+
+# create pipeline
+rfe = RFE(estimator=SVC(kernel='linear'), n_features_to_select=13)
+model = SVC(kernel='linear', C=1.0)
+pipeline = Pipeline(steps=[('s', rfe), ('m', model)])
+
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='precision', cv=cv,
+                           n_jobs=-1, error_score='raise')
+
+# report performance
+print('Precision score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
+# evaluate RFE for classification
+from numpy import mean
+from numpy import std
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.feature_selection import RFE
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+
+# define dataset
+X, y = make_classification(n_samples=1000, n_features=13, n_informative=5, n_redundant=5, random_state=0)
+
+# create pipeline
+rfe = RFE(estimator=SVC(kernel='linear'), n_features_to_select=13)
+model = SVC(kernel='linear')
+pipeline = Pipeline(steps=[('s', rfe), ('m', model)])
+
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='recall', cv=cv, n_jobs=-1, error_score='raise')
+
+# report performance
+print('Recall score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
+from numpy import mean
+from numpy import std
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.feature_selection import RFE
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+
+# define dataset
+X, y = make_classification(n_samples=1000, n_features=13, n_informative=5,
+                           n_redundant=5, random_state=0)
+
+# create pipeline
+rfe = RFE(estimator=SVC(kernel='linear'), n_features_to_select=5)
+model = SVC(kernel='rbf', C=1, gamma='scale')
+pipeline = Pipeline(steps=[('s',rfe),('m',model)])
+
+# evaluate model
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=0)
+n_scores = cross_val_score(pipeline, X, y, scoring='f1', cv=cv, n_jobs=-1, error_score='raise')
+
+# report performance
+print('F1-score: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
